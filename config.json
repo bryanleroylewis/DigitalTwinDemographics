@@ -1,0 +1,43 @@
+{ "image_type": "apptainer+scif",
+  "apps": [
+    {
+      "name": "Application 001",
+      "app": "app001_sciduct",
+      "binds": {
+        "input": "/input",
+        "job": "/job",
+        "output": "/scif/data",
+	"container_cache": "/cache"
+      },
+      "description": "A test application for use with the Scuduct Job Service.",
+      "input_files": [
+      ],
+      "input_schema": {
+      },
+      "output_files": {
+        "associateJobMeta": true,
+        "isContainer": true,
+        "type": "folder",
+        "contents": [
+          {
+            "match": "${MATCH}/app001_sciduct/*.txt",
+            "type": "txt",
+            "isContainer": false
+          }
+	    ]
+      },
+      "output_schema": {
+      },
+      "resource_requirements": {
+        "cores": 1,
+        "timelimit": 60
+      }
+    }
+  ],
+  "authors": [
+    "No One <do-not-reply@virginia.edu>"
+  ],
+  "description": "App 001",
+  "license": "Commercial",
+  "version": "0.1.0"
+}

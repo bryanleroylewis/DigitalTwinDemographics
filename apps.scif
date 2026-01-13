@@ -1,0 +1,22 @@
+%appinstall app001
+cp /docker_context/environment.yml .
+micromamba install --yes --name base --file environment.yml
+cd lib
+cp /docker_context/src/app_script001.py .
+chmod +x app_script001.py
+cd ../bin
+ln -s ../lib/app_script001.py
+
+%apphelp app001
+a little documentation for this app, if wanted
+
+%apprun app001
+CMD="app_script001.py $@"
+echo "Running $CMD" &&
+$CMD
+
+%apprun app001_sciduct
+mkdir -p $SCIF_APPDATA
+NAME="$(jq -r .input.name /job/job.json)"
+AGE="$(jq -r .input.age /job/job.json)"
+scif run app001 --name $NAME --age $AGE --outdir $SCIF_APPDATA

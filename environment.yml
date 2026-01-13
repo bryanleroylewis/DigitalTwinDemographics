@@ -1,0 +1,8 @@
+name: app_env001
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+    - cyclopts==2.9.9

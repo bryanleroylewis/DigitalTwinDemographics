@@ -1,0 +1,29 @@
+%appinstall sciduct
+BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%S.%NZ")
+jq --arg build_date $BUILD_DATE '. + {build_date: $build_date}' /docker_context/config.json > config.json
+cp config.json /tmp/config.json &&
+[ "$VERSION" = "0.0.0" ] || jq -r ".version=\"$VERSION\"" /tmp/config.json > config.json
+
+echo validating against schema in image_configuration.json
+cd lib
+curl --remote-name https://$(cat /run/secrets/gh_token)@raw.githubusercontent.com/NSSAC/sciduct_jobservice/refs/heads/main/src/jobservice/schema/image_configuration.json
+JSONSCHEMA="$MAMBA_EXE run --name base jsonschema"
+VALIDATE_CMD="$JSONSCHEMA -i $SCIF_APPROOT/config.json image_configuration.json"
+echo "Running: $VALIDATE_CMD"
+eval $VALIDATE_CMD
+if [ $? -eq 0 ]; then
+    echo "Generated Configuration appears to be valid"
+else
+    echo "Generated Configuration failed validation"
+    exit 1
+fi
+ln -s $SCIF_APPROOT/config.json /config.json
+
+
+%appenv sciduct
+CONFIG_JSON=$SCIF_APPROOT_sciduct/config.json
+export CONFIG_JSON
+
+
+%apprun sciduct
+cat $CONFIG_JSON
