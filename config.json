@@ -35,9 +35,11 @@
     }
   ],
   "authors": [
-    "No One <do-not-reply@virginia.edu>"
+    "Bryan Lewis <brylew@virginia.edu>",
+    "Andrew Warren <asw3xp@virginia.edu>",
+    "Brian Klahn <briandk@virginia.edu"
   ],
-  "description": "App 001",
+  "description": "Digital Twin Demographics Application",
   "license": "Commercial",
   "version": "0.1.0"
 }
