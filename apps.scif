@@ -1,17 +1,17 @@
-%appinstall app001
+%appinstall dtd
 cp /docker_context/environment.yml .
 micromamba install --yes --name base --file environment.yml
 cd lib
 cp /docker_context/src/app_script001.py .
-chmod +x app_script001.py
+chmod +x app_dtd.py
 cd ../bin
-ln -s ../lib/app_script001.py
+ln -s ../lib/app_dtd.py
 
-%apphelp app001
-a little documentation for this app, if wanted
+%apphelp dtd
+Digital Twin demographics is a simple app that uses population digitial twins to count demographic groups 
 
-%apprun app001
-CMD="app_script001.py $@"
+%apprun app_dtd
+CMD="app_dtd.py $@"
 echo "Running $CMD" &&
 $CMD
 

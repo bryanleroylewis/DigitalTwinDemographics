@@ -6,3 +6,6 @@ dependencies:
   - pip
   - pip:
     - cyclopts==2.9.9
+    - pandas
+    - numpy
+    - seaborn
