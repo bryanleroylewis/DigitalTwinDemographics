@@ -1,6 +1,6 @@
 {
     "us_state": "va",
     "general_population_path": "/project/bii_nssac/production/detailed_populations/ver_2_4_0/",
-    "population_path": "/project/bii_nssac/production/detailed_populations/ver_2_4_0/va"
-
+    "population_path": "/project/bii_nssac/production/detailed_populations/ver_2_4_0/va",
+    "shapefile_path": "/scif/data"
 }
