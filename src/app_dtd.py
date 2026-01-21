@@ -52,21 +52,69 @@ def get_population(config):
     ## Home location data
     print(f'Laoding home location file: {hloc_file}')
     home_loc = pd.read_csv(hloc_file)
-    pop = person.merge(home_loc[['hid','blockgroup_id']])
+    pop = person.merge(home_loc[['hid','blockgroup_id','longitude','latitude']])
 
     print(f'Population from {config["us_state"]} is size: {pop.shape[0]}')
     return pop
 
-def load_shapefile(config):
-    shapefile_path = "../data/wastewaterscan_polygons_extracted.shp"
-    polygons_gdf = gpd.read_file(shapefile_path)
-
-    print(f"Loaded {len(polygons_gdf)} polygons from shapefile")
+def load_polygons_from_csv(config):
+    from shapely.geometry import shape
+    import ast
+    
+    print(f"Loading polygons from {config['csv_path']}")
+    df = pd.read_csv(config['csv_path'])
+    
+    # Parse polygon coordinates and create geometries, skipping NaNs and invalid entries
+    def parse_geometry(coord_str):
+        try:
+            if pd.isna(coord_str):
+                return None
+            coords = ast.literal_eval(coord_str)
+            if not coords or len(coords) == 0 or len(coords[0]) < 3:
+                return None
+            return shape({'type': 'Polygon', 'coordinates': coords})
+        except:
+            return None
+    
+    df['geometry'] = df['polygon.coordinates'].apply(parse_geometry)
+    
+    # Filter out rows with invalid geometries
+    polygons_gdf = gpd.GeoDataFrame(df[df['geometry'].notna()], geometry='geometry', crs="EPSG:4326")
+    
+    print(f"Loaded {len(polygons_gdf)} valid polygons from CSV (skipped {len(df) - len(polygons_gdf)} invalid entries)")
     print(f"CRS: {polygons_gdf.crs}")
-    polygons_gdf.head()
+    print(f"Shape: {polygons_gdf.shape}")
+    return polygons_gdf
+
+
+def get_pop_coords(config, pop):
+    # Create GeoDataFrame from population data
+    # Convert to Point geometries
+    geometry = [Point(xy) for xy in zip(pop['longitude'], pop['latitude'])]
+    pop_gdf = gpd.GeoDataFrame(pop, geometry=geometry, crs="EPSG:4326")
+
+    print(f"Created GeoDataFrame with {len(pop_gdf)} population records")
+    print(f"CRS: {pop_gdf.crs}")
+
+    return pop_gdf
 
 ## def load_activity_locations(config):
+def find_pop_in_polygons(config, pop_gdf, polygons_gdf):
+    # Ensure both GeoDataFrames use the same CRS
+    # polygons_gdf = polygons_gdf.to_crs(pop_gdf.crs)
 
+    # Perform spatial join to find which population points fall within which polygons
+    pop_in_polygons = gpd.sjoin(pop_gdf, polygons_gdf, how="inner", predicate="within")
+
+    print(f"Found {len(pop_in_polygons)} population records within polygons")
+    print("Population example:\n", pop_in_polygons.columns,"\n", pop_in_polygons.head())
+    return pop_in_polygons
+
+def count_population_by_category(pop_in_polygons, category_columns):
+    # Count population by specified category
+    category_counts = pop_in_polygons.groupby(category_columns).count().reset_index()
+
+    return category_counts
 
 @app.default
 def main(
@@ -74,7 +122,7 @@ def main(
     us_state: str = "va",
     general_population_path: str = "/scif/data/pop/",
     population_path: str = "/project/bii_nssac/production/detailed_populations/ver_2_4_0/va",
-    shapefile_path: str = "/scif/data"
+    csv_path: str = "/scif/data/site_polygons.csv"
     ):
     """
     This is the default function called when the script
@@ -88,6 +136,8 @@ def main(
         lowercase two-letter state abbreviation to select which US population to access
     general_population_path: str
         The root directory for storing the population digital twins
+    csv_path: str
+        Path to the CSV file containing polygon information
     
     """
 
@@ -95,13 +145,22 @@ def main(
         'us_state': us_state,
         'general_population_path': general_population_path,
         'population_path': population_path,
-        'shapefile_path': shapefile_path
+        'csv_path': csv_path
     }
 
     print(f'configuration: {config}')
     pop = get_population(config)
 
-    print(f'Population from {config["us_state"]} is size: {pop.shape[0]}')
+    print(f'Population size from {config["us_state"]}: {pop.shape[0]}')
+
+    polygons_gdf = load_polygons_from_csv(config)
+    pop_gdf = get_pop_coords(config, pop)
+    pop_in_polygons = find_pop_in_polygons(config, pop_gdf, polygons_gdf)
+    print(f'Population in polygons is size: {pop_in_polygons.shape[0]}')
+
+    category_columns = ['place_name', 'race']
+    category_counts = count_population_by_category(pop_in_polygons, category_columns)
+    print("Population counts by category:\n", category_counts)
 
     # outpath = Path(outdir)
     # outpath.mkdir(exist_ok=True, parents=True)
